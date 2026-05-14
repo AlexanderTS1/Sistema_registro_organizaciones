@@ -100,12 +100,6 @@ class Organizacion extends Model
         return $this->hasOne(Constancia::class);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | ACCESSOR
-    |--------------------------------------------------------------------------
-    */
-
     public function getEstadoColorAttribute(): string
     {
         return match ($this->estado) {

@@ -123,6 +123,21 @@
                 </div>
 
             @endif
+            @if($organizacion->observaciones)
+
+        <div class="bg-yellow-50 border border-yellow-300 rounded-xl p-4 mt-6">
+
+            <h3 class="font-bold text-yellow-800 mb-2">
+                Observaciones
+            </h3>
+
+            <p class="text-yellow-700">
+                {{ $organizacion->observaciones }}
+            </p>
+
+        </div>
+
+        @endif
 
         </div>
 

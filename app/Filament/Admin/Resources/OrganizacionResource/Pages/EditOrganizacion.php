@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\OrganizacionResource\Pages;
 use App\Filament\Admin\Resources\OrganizacionResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use App\Models\HistorialEstado;
 
 class EditOrganizacion extends EditRecord
 {
@@ -16,4 +17,18 @@ class EditOrganizacion extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    protected function afterSave(): void
+{
+    HistorialEstado::create([
+
+        'organizacion_id' => $this->record->id,
+
+        'estado' => $this->record->estado,
+
+        'observacion' => $this->record->observaciones,
+
+        'fecha' => now(),
+    ]);
+}
 }

@@ -3,6 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Publico\RegistroOrganizacionController;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\RegistroOrganizacionMail;
+use App\Models\Organizacion;
 
 /*
 |--------------------------------------------------------------------------
@@ -87,6 +90,17 @@ Route::middleware('auth')->group(function () {
         ->name('profile.destroy');
 });
 
+
+
+/*Route::get('/test-correo', function () {
+
+    $organizacion = Organizacion::first();
+
+    Mail::to('TU_CORREO@gmail.com')
+        ->send(new RegistroOrganizacionMail($organizacion));
+
+    return 'Correo enviado';
+});*/
 
 
 require __DIR__.'/auth.php';

@@ -14,7 +14,8 @@ class HistorialEstado extends Model
         'organizacion_id',
         'user_id',
         'estado',
-        'comentario',
+        'observacion',
+        'fecha',
     ];
 
     /**

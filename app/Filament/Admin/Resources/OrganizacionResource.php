@@ -3,15 +3,31 @@
 namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\OrganizacionResource\Pages;
-use App\Filament\Admin\Resources\OrganizacionResource\RelationManagers;
 use App\Models\Organizacion;
+
 use Filament\Forms;
 use Filament\Forms\Form;
+
 use Filament\Resources\Resource;
+
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\BadgeColumn;
+
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Textarea;
+
+use Illuminate\Support\Facades\Mail;
+use App\Mail\EstadoOrganizacionMail;
+
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Storage;
+use App\Models\Constancia;
 
 
 class OrganizacionResource extends Resource
@@ -20,11 +36,7 @@ class OrganizacionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
 
-    protected static ?string $navigationGroup = 'Organizaciones';
-
     protected static ?string $navigationLabel = 'Organizaciones';
-
-    protected static ?string $modelLabel = 'Organización';
 
     protected static ?string $pluralModelLabel = 'Organizaciones';
 
@@ -33,95 +45,64 @@ class OrganizacionResource extends Resource
         return $form
             ->schema([
 
-                Forms\Components\Section::make('Datos de la Organización')
+                Section::make('Información General')
                     ->schema([
 
-                        Forms\Components\TextInput::make('codigo_expediente')
-                            ->label('Código Expediente')
-                            ->disabled()
-                            ->dehydrated(),
+                        TextInput::make('codigo_expediente')
+                            ->disabled(),
 
-                        Forms\Components\Select::make('tipo_organizacion')
-                            ->label('Tipo Organización')
+                        TextInput::make('razon_social')
+                            ->disabled(),
+
+                        Select::make('tipo_organizacion')
                             ->options([
                                 'social' => 'Social',
                                 'base' => 'Base',
                                 'comunal' => 'Comunal',
                                 'vecinal' => 'Vecinal',
-                                'cultural' => 'Cultural',
-                                'regantes' => 'Regantes',
-                                'otros' => 'Otros',
                             ])
-                            ->required(),
+                            ->disabled(),
 
-                        Forms\Components\TextInput::make('razon_social')
-                            ->required(),
-
-                        Forms\Components\TextInput::make('direccion'),
-
-                        Forms\Components\Select::make('representante_id')
-                            ->relationship(
-                                'representante',
-                                'nombres'
-                            )
-                            ->searchable()
-                            ->preload()
-                            ->required(),
-
-                    ])
-                    ->columns(2),
-
-                Forms\Components\Section::make('Documentos PDF')
-                    ->schema([
-
-                        Forms\Components\FileUpload::make('acta_constitucion')
-                            ->acceptedFileTypes([
-                                'application/pdf'
-                            ])
-                            ->directory('documentos')
-                            ->required(),
-
-                        Forms\Components\FileUpload::make('padron_socios')
-                            ->acceptedFileTypes([
-                                'application/pdf'
-                            ])
-                            ->directory('documentos')
-                            ->required(),
-
-                        Forms\Components\FileUpload::make('acta_eleccion_directiva')
-                            ->acceptedFileTypes([
-                                'application/pdf'
-                            ])
-                            ->directory('documentos')
-                            ->required(),
-
-                        Forms\Components\FileUpload::make('partida_registral')
-                            ->acceptedFileTypes([
-                                'application/pdf'
-                            ])
-                            ->directory('documentos'),
-
-                    ])
-                    ->columns(2),
-
-                Forms\Components\Section::make('Evaluación')
-                    ->schema([
-
-                        Forms\Components\Select::make('estado')
+                        Select::make('estado')
                             ->options([
                                 'registrado' => 'Registrado',
-                                'en_evaluacion' => 'En evaluación',
+                                'en_evaluacion' => 'En Evaluación',
                                 'observado' => 'Observado',
                                 'aceptado' => 'Aceptado',
                             ])
-                            ->default('registrado')
                             ->required(),
 
-                        Forms\Components\Textarea::make('observaciones')
-                            ->rows(4),
+                        Textarea::make('observaciones'),
 
                     ]),
 
+                Section::make('Documentos')
+                    ->schema([
+
+                        FileUpload::make('acta_constitucion')
+                            ->disk('public')
+                            ->directory('documentos')
+                            ->downloadable()
+                            ->openable(),
+
+                        FileUpload::make('padron_socios')
+                            ->disk('public')
+                            ->directory('documentos')
+                            ->downloadable()
+                            ->openable(),
+
+                        FileUpload::make('acta_eleccion_directiva')
+                            ->disk('public')
+                            ->directory('documentos')
+                            ->downloadable()
+                            ->openable(),
+
+                        FileUpload::make('partida_registral')
+                            ->disk('public')
+                            ->directory('documentos')
+                            ->downloadable()
+                            ->openable()
+                    ]),
             ]);
     }
 
@@ -130,41 +111,34 @@ class OrganizacionResource extends Resource
         return $table
             ->columns([
 
-                Tables\Columns\TextColumn::make('codigo_expediente')
-                    ->label('Expediente')
-                    ->searchable()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('razon_social')
+                TextColumn::make('codigo_expediente')
                     ->searchable(),
 
-                Tables\Columns\BadgeColumn::make('tipo_organizacion'),
+                TextColumn::make('razon_social')
+                    ->searchable(),
 
-                Tables\Columns\TextColumn::make('representante.nombre_completo')
+                TextColumn::make('tipo_organizacion'),
+
+                TextColumn::make('representante.nombre_completo')
                     ->label('Representante'),
 
-                Tables\Columns\BadgeColumn::make('estado')
-                    ->colors([
-                        'gray' => 'registrado',
-                        'warning' => 'en_evaluacion',
-                        'danger' => 'observado',
-                        'success' => 'aceptado',
-                    ]),
+                TextColumn::make('estado')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
 
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Fecha Registro')
-                    ->dateTime('d/m/Y'),
+                        'registrado' => 'gray',
 
-            ])
-            ->filters([
+                        'en_evaluacion' => 'warning',
 
-                Tables\Filters\SelectFilter::make('estado')
-                    ->options([
-                        'registrado' => 'Registrado',
-                        'en_evaluacion' => 'En evaluación',
-                        'observado' => 'Observado',
-                        'aceptado' => 'Aceptado',
-                    ]),
+                        'observado' => 'danger',
+
+                        'aceptado' => 'success',
+
+                        default => 'gray',
+                    }),
+
+                TextColumn::make('created_at')
+                    ->dateTime('d/m/Y H:i'),
 
             ])
             ->actions([
@@ -173,11 +147,111 @@ class OrganizacionResource extends Resource
 
                 Tables\Actions\EditAction::make(),
 
-            ])
-            ->bulkActions([
+                Tables\Actions\Action::make('aprobar')
 
-                Tables\Actions\DeleteBulkAction::make(),
+                    ->color('success')
 
+                    ->icon('heroicon-o-check-circle')
+
+                    ->requiresConfirmation()
+
+                    ->action(function ($record) {
+
+                        $record->update([
+                            'estado' => 'aceptado'
+                        ]);
+
+                        $codigoConstancia =
+                            'CONST-' . date('Y') . '-' .
+                            str_pad($record->id, 5, '0', STR_PAD_LEFT);
+
+                        $constancia = Constancia::create([
+
+                            'organizacion_id' => $record->id,
+
+                            'codigo_constancia' => $codigoConstancia,
+
+                        ]);
+
+                        $pdf = Pdf::loadView(
+                            'pdf.constancia-organizacion',
+                            [
+                                'organizacion' => $record,
+                                'constancia' => $constancia,
+                            ]
+                        );
+
+                        $nombreArchivo =
+                            'constancias/' .
+                            $codigoConstancia . '.pdf';
+
+                        Storage::disk('public')->put(
+                            $nombreArchivo,
+                            $pdf->output()
+                        );
+
+                        $constancia->update([
+                            'archivo_pdf' => $nombreArchivo,
+                        ]);
+
+                    }),
+
+                    
+
+                Tables\Actions\Action::make('observar')
+
+                    ->label('Observar')
+
+                    ->color('danger')
+
+                    ->icon('heroicon-o-x-circle')
+
+                    ->form([
+
+                        Textarea::make('observaciones')
+                            ->label('Motivo de Observación')
+                            ->required()
+                            ->rows(5),
+
+                    ])
+
+                    ->action(function ($record, array $data) {
+
+                        $record->update([
+
+                            'estado' => 'observado',
+
+                            'observaciones' => $data['observaciones'],
+
+                        ]);
+
+                        Mail::to($record->representante->correo)
+                            ->send(new EstadoOrganizacionMail($record));
+
+                    }),
+                /*
+                |------------------------------------------------------------------
+                | DESCARGAR CONSTANCIA PDF
+                |------------------------------------------------------------------
+                */
+
+                Tables\Actions\Action::make('descargar_constancia')
+
+                    ->label('Constancia')
+
+                    ->icon('heroicon-o-document-arrow-down')
+
+                    ->color('info')
+
+                    ->url(fn ($record) =>
+                        asset('storage/' . $record->constancia->archivo_pdf)
+                    )
+
+                    ->openUrlInNewTab()
+
+                    ->visible(fn ($record) =>
+                        $record->constancia !== null
+                    ),    
             ]);
     }
 
