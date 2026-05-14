@@ -27,31 +27,13 @@ class RegistroOrganizacionController extends Controller
     {
         $request->validate([
 
-            /*
-            |--------------------------------------------------------------------------
-            | DATOS REPRESENTANTE
-            |--------------------------------------------------------------------------
-            */
-
             'dni' => 'required|digits:8',
             'nombres' => 'required|string|max:100',
             'apellidos' => 'required|string|max:100',
             'correo' => 'required|email|max:255',
 
-            /*
-            |--------------------------------------------------------------------------
-            | DATOS ORGANIZACION
-            |--------------------------------------------------------------------------
-            */
-
             'tipo_organizacion' => 'required',
             'razon_social' => 'required|string|max:255',
-
-            /*
-            |--------------------------------------------------------------------------
-            | DOCUMENTOS
-            |--------------------------------------------------------------------------
-            */
 
             'acta_constitucion' => 'required|mimes:pdf|max:5120',
             'padron_socios' => 'required|mimes:pdf|max:5120',
@@ -65,30 +47,7 @@ class RegistroOrganizacionController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | 1. CREAR PERSONA
-            |--------------------------------------------------------------------------
-            */
-
-            $persona = Persona::create([
-
-                'dni' => $request->dni,
-                'nombres' => $request->nombres,
-                'apellidos' => $request->apellidos,
-
-                'domicilio' => $request->domicilio,
-                'distrito' => $request->distrito,
-                'provincia' => $request->provincia,
-                'departamento' => $request->departamento,
-
-                'telefono' => $request->telefono,
-                'correo' => $request->correo,
-            ]);
-
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | 2. CREAR ORGANIZACION
+            | 1. CREAR ORGANIZACION
             |--------------------------------------------------------------------------
             */
 
@@ -99,8 +58,6 @@ class RegistroOrganizacionController extends Controller
                 'razon_social' => $request->razon_social,
 
                 'direccion' => $request->direccion,
-
-                'representante_id' => $persona->id,
 
                 'estado' => 'registrado',
 
@@ -122,21 +79,44 @@ class RegistroOrganizacionController extends Controller
                     : null,
             ]);
 
-
-
             /*
             |--------------------------------------------------------------------------
-            | 3. CONFIRMAR TRANSACCION
+            | 2. CREAR PERSONA
             |--------------------------------------------------------------------------
             */
 
-            DB::commit();
+            $persona = Persona::create([
 
+                'organizacion_id' => $organizacion->id,
 
+                'dni' => $request->dni,
+                'nombres' => $request->nombres,
+                'apellidos' => $request->apellidos,
+
+                'domicilio' => $request->domicilio,
+                'distrito' => $request->distrito,
+                'provincia' => $request->provincia,
+                'departamento' => $request->departamento,
+
+                'telefono' => $request->telefono,
+                'correo' => $request->correo,
+            ]);
 
             /*
             |--------------------------------------------------------------------------
-            | 4. ENVIAR CORREO
+            | 3. ACTUALIZAR REPRESENTANTE
+            |--------------------------------------------------------------------------
+            */
+
+            $organizacion->update([
+                'representante_id' => $persona->id
+            ]);
+
+            DB::commit();
+
+            /*
+            |--------------------------------------------------------------------------
+            | 4. CORREO
             |--------------------------------------------------------------------------
             */
 
@@ -147,14 +127,11 @@ class RegistroOrganizacionController extends Controller
 
             } catch (\Exception $mailError) {
 
-                // evita que falle el registro por correo
             }
-
-
 
             /*
             |--------------------------------------------------------------------------
-            | 5. REDIRECCIONAR
+            | 5. REDIRECT
             |--------------------------------------------------------------------------
             */
 
@@ -167,12 +144,8 @@ class RegistroOrganizacionController extends Controller
 
             DB::rollBack();
 
-            return back()
-                ->withInput()
-                ->with(
-                    'error',
-                    'Error: ' . $e->getMessage()
-                );
+            dd($e->getMessage());
+
         }
     }
 

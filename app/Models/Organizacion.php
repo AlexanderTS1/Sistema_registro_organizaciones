@@ -28,14 +28,6 @@ class Organizacion extends Model
 
         'representante_id',
 
-        'acta_constitucion',
-
-        'padron_socios',
-
-        'acta_eleccion_directiva',
-
-        'partida_registral',
-
         'estado',
 
         'observaciones',
@@ -43,6 +35,12 @@ class Organizacion extends Model
         'fecha_evaluacion',
 
         'fecha_aceptacion',
+
+        // DOCUMENTOS
+        'acta_constitucion',
+        'padron_socios',
+        'acta_eleccion_directiva',
+        'partida_registral',
     ];
 
     protected $casts = [
