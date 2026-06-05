@@ -39,6 +39,7 @@ class RegistroOrganizacionController extends Controller
             'padron_socios' => 'required|mimes:pdf|max:5120',
             'acta_eleccion_directiva' => 'required|mimes:pdf|max:5120',
             'partida_registral' => 'nullable|mimes:pdf|max:5120',
+            'resolucion_ana' => 'nullable|mimes:pdf|max:2048',
         ]);
 
         DB::beginTransaction();
@@ -50,6 +51,14 @@ class RegistroOrganizacionController extends Controller
             | 1. CREAR ORGANIZACION
             |--------------------------------------------------------------------------
             */
+            $resolucionANA = null;
+
+            if ($request->hasFile('resolucion_ana')) {
+
+                $resolucionANA = $request
+                    ->file('resolucion_ana')
+                    ->store('documentos', 'public');
+            }
 
             $organizacion = Organizacion::create([
 
@@ -77,8 +86,11 @@ class RegistroOrganizacionController extends Controller
                     ? $request->file('partida_registral')
                         ->store('documentos', 'public')
                     : null,
-            ]);
 
+                'resolucion_ana' => $request->tipo_organizacion === 'regantes'
+                    ? 'required|mimes:pdf|max:2048'
+                    : 'nullable|mimes:pdf|max:2048',
+            ]);
             /*
             |--------------------------------------------------------------------------
             | 2. CREAR PERSONA

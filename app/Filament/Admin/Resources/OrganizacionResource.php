@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Admin\Resources;
+namespace App\Filament\\Resources;
 
 use App\Filament\Admin\Resources\OrganizacionResource\Pages;
 use App\Models\Organizacion;
@@ -98,6 +98,12 @@ class OrganizacionResource extends Resource
                             ->openable(),
 
                         FileUpload::make('partida_registral')
+                            ->disk('public')
+                            ->directory('documentos')
+                            ->downloadable()
+                            ->openable(),
+
+                        FileUpload::make('resolucion_ana')
                             ->disk('public')
                             ->directory('documentos')
                             ->downloadable()

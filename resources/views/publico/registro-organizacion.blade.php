@@ -270,6 +270,16 @@
                                    name="partida_registral"
                                    class="w-full border border-gray-300 rounded-xl p-3">
                         </div>
+                        <div id="campoResolucionANA" class="hidden">
+                            <label class="block mb-2 font-medium">
+                                Resolución de Reconocimiento emitida por ANA
+                            </label>
+
+                            <input type="file"
+                                name="resolucion_ana"
+                                accept=".pdf"
+                                class="w-full border border-gray-300 rounded-xl p-3">
+                        </div>
 
                     </div>
 
@@ -293,6 +303,36 @@
     </div>
 
 </div>
+<script>
 
+    const tipoOrganizacion = document.querySelector(
+        'select[name="tipo_organizacion"]'
+    );
+
+    const campoANA = document.getElementById(
+        'campoResolucionANA'
+    );
+
+    function toggleCampoANA() {
+
+        if (tipoOrganizacion.value === 'regantes') {
+
+            campoANA.classList.remove('hidden');
+
+        } else {
+
+            campoANA.classList.add('hidden');
+
+        }
+    }
+
+    tipoOrganizacion.addEventListener(
+        'change',
+        toggleCampoANA
+    );
+
+    toggleCampoANA();
+
+</script>
 </body>
 </html>
